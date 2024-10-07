@@ -3,7 +3,7 @@ import { createWeb3Modal, defaultConfig, useWeb3Modal, useWeb3ModalAccount, useW
 import { shortenAddress } from "./lib/utils";
 import { contractABI, contractAdr } from "./contracts/contractData";
 import {ExternalLink} from "lucide-react"
-import { BrowserProvider, Contract, formatEther} from 'ethers'
+import { BrowserProvider, Contract, formatEther, parseEther} from 'ethers'
 import { useEffect, useState } from "react";
 const projectId = import.meta.env.VITE_PROJECT_ID;
 
@@ -42,6 +42,9 @@ function App() {
   const {walletProvider} = useWeb3ModalProvider()
   const [crowdfindingBalance, setCrowdfundingBalance] = useState<string| null>(null)
   const [funderLength, setFUnderLength] =  useState<number | null>(null)
+  const [amountFund, setAmountFund] = useState<number | null>(null)
+
+  
   const fetchContractData = async () => {
     if(walletProvider){
       const ethersProvider = new BrowserProvider(walletProvider)
@@ -52,6 +55,23 @@ function App() {
       setCrowdfundingBalance(formatEther(contractBalance))
     }
     
+  }
+  const handleFundToCrowdfunding = async() => {
+    if(amountFund ===null ||amountFund<=0) {
+      alert("Amound Funding Invalid")
+    }
+    if(walletProvider){
+      const ethersProvider = new BrowserProvider(walletProvider)
+      const signer = await ethersProvider.getSigner()
+      const contract = new Contract (contractAdr, contractABI, signer  )
+      const tx = await contract.fund({value: parseEther(String(amountFund)) })
+      //parseEther(amountFund) = parseUnits(amountFund, 18)
+    }
+
+  }
+  const onInputAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAmountFund(Number(e.target.value))
+
   }
   //useEffect được chạy sau khi mọi thứ chạy xong
   useEffect(() => {fetchContractData()}, [walletProvider])
@@ -80,7 +100,15 @@ function App() {
             <p className="text-3xl font-bold">{(funderLength)}</p>
           </div>
         </div>
+        <div className="w-[70%] p-4 border shadow-lg rounded-lg  flex flex-col space-y-2">
+          <h2 className="text-lg font-bold">Donate your Ether</h2>
+          <div className="flex gap-2">
+            <input onChange={onInputAmountChange} placeholder="amount" className="border p-2  rounded" type="number" />
+            <button onClick={handleFundToCrowdfunding} className="bg-slate-900 text-white py-2 px-3 rounded-lg hover:bg-slate-800 transition-colors">Fund</button>
+          </div>
+        </div>
       </div>
+      
     </main>
     </>
   )

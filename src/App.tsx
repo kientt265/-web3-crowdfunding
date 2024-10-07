@@ -1,9 +1,10 @@
 
-import { createWeb3Modal, defaultConfig, useWeb3Modal, useWeb3ModalAccount } from "@web3modal/ethers/react";
+import { createWeb3Modal, defaultConfig, useWeb3Modal, useWeb3ModalAccount, useWeb3ModalProvider } from "@web3modal/ethers/react";
 import { shortenAddress } from "./lib/utils";
-import { contractAdr } from "./contracts/contractData";
+import { contractABI, contractAdr } from "./contracts/contractData";
 import {ExternalLink} from "lucide-react"
-
+import { BrowserProvider, Contract, formatEther} from 'ethers'
+import { useEffect, useState } from "react";
 const projectId = import.meta.env.VITE_PROJECT_ID;
 
 const sepolia = {
@@ -38,7 +39,22 @@ createWeb3Modal({
 function App() {
   const { open } = useWeb3Modal()
   const { address, isConnected } = useWeb3ModalAccount()
-
+  const {walletProvider} = useWeb3ModalProvider()
+  const [crowdfindingBalance, setCrowdfundingBalance] = useState<string| null>(null)
+  const [funderLength, setFUnderLength] =  useState<number | null>(null)
+  const fetchContractData = async () => {
+    if(walletProvider){
+      const ethersProvider = new BrowserProvider(walletProvider)
+      const contract = new Contract (contractAdr, contractABI, ethersProvider )
+      const contractBalance = await ethersProvider.getBalance(contractAdr)
+      const funderLength = await contract.getFundersLength()
+      setFUnderLength(Number(funderLength))
+      setCrowdfundingBalance(formatEther(contractBalance))
+    }
+    
+  }
+  //useEffect được chạy sau khi mọi thứ chạy xong
+  useEffect(() => {fetchContractData()}, [walletProvider])
 
   return (
     <>
@@ -57,11 +73,11 @@ function App() {
         <div className="space-y-2 w-[30%]">
           <div className="p-2 border shadow-lg rouded-lg">
             <h2 className="text-lg font-bold">Total Amount Funding</h2>
-            <p className="font-bold"><span className="text-3xl font-bold">1</span> ETH</p>
+            <p className="font-bold"><span className="text-3xl font-bold">{crowdfindingBalance}</span> ETH</p>
           </div>
           <div className="p-2 border shadow-lg rouded-lg">
             <h2 className="text-lg font-bold">Funders</h2>
-            <p className="text-3xl font-bold">1</p>
+            <p className="text-3xl font-bold">{(funderLength)}</p>
           </div>
         </div>
       </div>
